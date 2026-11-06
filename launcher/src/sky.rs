@@ -270,6 +270,21 @@ impl Sky {
         focused: bool,
         now: Instant,
     ) -> (Div, Option<Duration>) {
+        // Kitwy uses quiet Material surfaces instead of the former animated pixel landscape.
+        // Keep the original renderer available for palettes that provide a graduated sky.
+        if n.sky.iter().all(|&color| color == n.page) {
+            self.clock.set(false, now);
+            self.unfocused = None;
+            return (
+                div()
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full()
+                    .bg(rgb(n.page)),
+                None,
+            );
+        }
         if focused {
             self.unfocused = None;
         } else {

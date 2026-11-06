@@ -1,6 +1,4 @@
-//! The launcher's frame in the night look (docs/design-system.md, "Night"): the sidebar's plate
-//! and rows, and the top bar's tabs, icon buttons and account chip. The sky shows between them;
-//! only the sidebar and the selected or hovered parts are plates.
+//! Kitwy's Material frame: rounded navigation items, tonal surfaces and understated dividers.
 use crate::plate::{alpha, cut};
 use crate::theme::{self, night, Step, Theme};
 use crate::{hover_fade, keyboard, track_hover};
@@ -11,7 +9,7 @@ pub fn c(color: u32) -> Hsla {
     rgb(color).into()
 }
 
-/// Text in one of the night's type steps (`night::TYPE`), at its own weight.
+/// Text in one of the shared type steps, at its own weight.
 pub fn text(step: Step, color: Hsla) -> Div {
     div()
         .font_family(if step.px >= night::DISPLAY.px {
@@ -25,17 +23,16 @@ pub fn text(step: Step, color: Hsla) -> Div {
         .text_color(color)
 }
 
-/// The sidebar's ground: `card` at its opacity from the top of the window to the bottom, with a
-/// 1 px stroke on its right edge. Square: it meets the window's edges.
+/// The navigation rail's low-emphasis surface and subtle divider.
 pub fn sidebar_plate(t: &Theme) -> Div {
     let n = t.night;
     div()
-        .bg(alpha(n.card, n.card_alpha))
+        .bg(c(n.side))
         .border_r_1()
-        .border_color(alpha(n.stroke, n.stroke_alpha))
+        .border_color(alpha(n.stroke, n.rule_alpha))
 }
 
-/// A plate behind a selected row or tab: `card_hi`, its corners cut in `steps` pixel steps.
+/// A plate behind a selected row or tab, rounded to the current Material shape.
 fn selected(steps: usize, t: &Theme) -> Div {
     let n = t.night;
     cut(

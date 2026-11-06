@@ -1,15 +1,21 @@
 # Horizon's design system
 
-One design language for the launcher, the website and the few overlays the game draws that
+One shared design language for Horizon's website and the few overlays the game draws that
 vanilla has no screen for (the on-screen keyboard a controller types with). Every game screen
 and the HUD are not part of it: they are vanilla's, because parity is the point of the game, and
 Horizon's own settings are pages built from vanilla's widgets, the way mods add theirs.
 
-The tokens live in one place, `crates/horizon-theme`. The launcher (`launcher/src/theme.rs`)
-and the game (`crates/horizon-client/src/ui_theme.rs`) read them as Rust constants, and the
-website reads them as CSS custom properties generated from the same crate
+The shared tokens live in `crates/horizon-theme`. Horizon's launcher and game read them as Rust
+constants, and the website reads them as CSS custom properties generated from the same crate
 (`cargo run -p xtask -- tokens` writes `crates/horizon-theme/tokens.css`, which the website's build
 reads from main; a test fails when the file is out of date). Change a value in the crate and all three follow.
+
+## Kitwy Launcher fork
+
+The desktop launcher in this fork has a local Material You-inspired visual system, defined in
+`launcher/src/theme.rs`: Geist typography, light and dark tonal palettes, rounded surfaces, pill
+actions and a static page-colour background. This override is intentionally limited to the launcher;
+the Android game's vanilla menus and the shared Horizon theme tokens are unchanged.
 
 ## Where it comes from
 

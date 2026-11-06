@@ -1,9 +1,9 @@
-//! Shapes whose corners are cut in pixel steps, like the sky's art (docs/design-system.md, "Night").
-//! The fill and the stroke are rectangles that don't overlap, so a translucent plate keeps one
-//! opacity, and the stroke follows the steps. One canvas paints them all: a plate costs two
-//! elements, however many steps it has.
+//! Rounded Material surfaces shared by cards, selected navigation items and primary actions.
+//! Native GPUI backgrounds and outlines keep the shape crisp without the old hand-painted corners.
 use crate::theme::night::{self, Night};
-use gpui::{canvas, div, point, prelude::*, px, rgba, Bounds, Div, Pixels, Rgba};
+use gpui::{div, prelude::*, px, rgba, Div, Rgba};
+#[cfg(test)]
+use gpui::{point, Bounds, Pixels};
 
 /// `c` at opacity `a`.
 pub fn alpha(c: u32, a: f32) -> Rgba {
@@ -21,35 +21,21 @@ pub fn plate(n: &Night) -> Div {
     )
 }
 
-/// A box of any size whose corners are cut in `steps` steps of `step` px: `fill` inside, and a
-/// `stroke` of the given colour and width along the edge.
-pub fn cut(step: f32, steps: usize, fill: Option<Rgba>, stroke: Option<(Rgba, f32)>) -> Div {
-    let fill = fill
-        .into_iter()
-        .flat_map(|c| fill_rects(step, steps).into_iter().map(move |r| (r, c)));
-    let stroke = stroke.into_iter().flat_map(|(c, w)| {
-        stroke_rects(step, steps, w)
-            .into_iter()
-            .map(move |r| (r, c))
-    });
-    let quads: Vec<_> = fill.chain(stroke).collect();
-    div().relative().child(
-        canvas(
-            |_, _, _| {},
-            move |bounds, (), window, _| {
-                for (r, c) in quads {
-                    window.paint_quad(gpui::fill(r.within(bounds), c));
-                }
-            },
-        )
-        .absolute()
-        .top_0()
-        .left_0()
-        .size_full(),
-    )
+/// A rounded Material container background, preserving the previous helper's call signature.
+pub fn cut(_step: f32, steps: usize, fill: Option<Rgba>, stroke: Option<(Rgba, f32)>) -> Div {
+    let radius = if steps >= 2 { 20. } else { 999. };
+    let mut shape = div().relative().rounded(px(radius));
+    if let Some(color) = fill {
+        shape = shape.bg(color);
+    }
+    if let Some((color, _width)) = stroke {
+        shape = shape.border_1().border_color(color);
+    }
+    shape
 }
 
 /// A distance from the box's start (left, top) or end (right, bottom) edge.
+#[cfg(test)]
 #[derive(Clone, Copy, Debug)]
 enum Edge {
     Start(f32),
@@ -57,12 +43,14 @@ enum Edge {
 }
 
 /// A rectangle between two vertical and two horizontal edges, for a box whose size isn't known yet.
+#[cfg(test)]
 #[derive(Clone, Copy, Debug)]
 struct Rect {
     x: (Edge, Edge),
     y: (Edge, Edge),
 }
 
+#[cfg(test)]
 impl Rect {
     /// Measured from the corner that `right` and `bottom` name: `x`, `y` from it, `w` × `h`.
     fn at(right: bool, bottom: bool, x: f32, y: f32, w: f32, h: f32) -> Rect {
@@ -109,6 +97,7 @@ impl Rect {
 }
 
 /// The fill: a strip per step at the top and the bottom, each `step` further in, and the middle.
+#[cfg(test)]
 fn fill_rects(step: f32, steps: usize) -> Vec<Rect> {
     let deep = steps as f32 * step;
     let mut rects = Vec::new();
@@ -131,6 +120,7 @@ fn fill_rects(step: f32, steps: usize) -> Vec<Rect> {
 
 /// The stroke, `w` wide on the fill's outermost pixels: the four edges, and a riser and a tread
 /// per step at each corner.
+#[cfg(test)]
 fn stroke_rects(step: f32, steps: usize, w: f32) -> Vec<Rect> {
     let deep = steps as f32 * step;
     let mut rects = Vec::new();

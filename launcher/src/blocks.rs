@@ -1,6 +1,5 @@
-//! The blocky look's parts (`docs/design-system.md`, "Blocks"): pixel type, pixel icons, panels
-//! with a dark outline, a light bevel on top and a darker lip below, sunk wells, badges, the
-//! inventory tabs, and the slots that hold icons downloaded at run time.
+//! Shared Material surfaces, status chips, segmented tabs and image slots used throughout the
+//! launcher. The legacy helper names remain to avoid changing page behavior.
 use crate::theme::{self, Theme};
 use gpui::{
     div, img, prelude::*, px, svg, AnyElement, App, ClickEvent, Div, FontWeight, Hsla, ImageSource,
@@ -27,7 +26,7 @@ impl gpui::AssetSource for Assets {
     }
 }
 
-/// A pixel icon (`horizon_theme::icons`) in `color`.
+/// A bundled launcher icon in `color`.
 pub fn icon(name: &'static str, size: f32, color: Hsla) -> Svg {
     svg()
         .path(format!("icons/{name}.svg"))
@@ -36,7 +35,7 @@ pub fn icon(name: &'static str, size: f32, color: Hsla) -> Svg {
         .text_color(color)
 }
 
-/// Text in the pixel face: headings, navigation, buttons, badges.
+/// Text in the launcher's UI face.
 pub fn pixel(size: f32, weight: FontWeight) -> Div {
     div()
         .font_family(theme::PIXEL)
@@ -73,9 +72,9 @@ pub fn panel(t: &Theme) -> Div {
     div()
         .relative()
         .bg(t.panel)
-        .border_2()
-        .border_color(t.outline)
-        .children(edges(t.bevel, t.lip, theme::BEVEL))
+        .rounded(px(theme::RADIUS_PLATE))
+        .border_1()
+        .border_color(t.rule)
 }
 
 /// A small label in a block of its colour: "Runs", "Partly", a version.
@@ -88,14 +87,16 @@ pub fn badge(label: impl Into<SharedString>, color: Hsla, t: &Theme) -> Div {
         .flex_none()
         .items_center()
         .gap(px(6.))
-        .h(px(22.))
-        .px(px(8.))
+        .h(px(28.))
+        .px(px(12.))
         .bg(color.opacity(tint))
-        .border_2()
-        .border_color(t.outline)
+        .rounded(px(999.))
         .child(div().size(px(6.)).bg(color))
         .child(
-            pixel(12., FontWeight::MEDIUM)
+            div()
+                .font_family(theme::FONT)
+                .font_weight(FontWeight::MEDIUM)
+                .text_size(px(12.))
                 .text_color(color)
                 .child(label),
         )
@@ -123,22 +124,13 @@ pub fn tabs<T: Copy + PartialEq + 'static>(
                 .flex()
                 .items_center()
                 .gap(px(8.))
-                .h(px(if open { 42. } else { 38. }))
-                .px(px(14.))
-                .border_2()
-                .border_b_0()
-                .border_color(t.outline)
+                .h(px(40.))
+                .px(px(16.))
+                .border_1()
+                .border_color(t.rule)
+                .rounded(px(999.))
                 .cursor_pointer()
-                .bg(if open { t.panel } else { t.side })
-                .child(
-                    div()
-                        .absolute()
-                        .top_0()
-                        .left_0()
-                        .right_0()
-                        .h(px(theme::BEVEL))
-                        .bg(if open { t.bevel } else { t.raised }),
-                )
+                .bg(if open { t.button } else { t.side })
                 .child(icon(icon_name, 18., if open { t.accent } else { t.muted }))
                 .child(
                     pixel(15., FontWeight::MEDIUM)
@@ -146,15 +138,12 @@ pub fn tabs<T: Copy + PartialEq + 'static>(
                         .child(crate::i18n::tr(label)),
                 )
                 .when(!open, |d| d.hover(move |s| s.bg(t.raised)))
-                // The open tab covers the panel's outline under it.
-                .when(open, |d| d.mb(px(-2.)))
                 .on_click(move |_: &ClickEvent, window, cx| pick(value, window, cx));
             crate::keyboard(tab, &t)
         }))
 }
 
-/// A square slot for an icon: the picture at `source` when there is one, else the first letter of
-/// `name` on a raised block.
+/// A rounded image slot for an icon or the first letter of `name`.
 pub fn slot(source: Option<ImageSource>, name: &str, size: f32, t: &Theme) -> Div {
     let frame = div()
         .flex()
@@ -163,8 +152,9 @@ pub fn slot(source: Option<ImageSource>, name: &str, size: f32, t: &Theme) -> Di
         .justify_center()
         .size(px(size))
         .overflow_hidden()
-        .border_2()
-        .border_color(t.outline)
+        .rounded(px(12.))
+        .border_1()
+        .border_color(t.rule)
         .bg(t.well);
     match source {
         Some(source) => frame.child(img(source).size(px(size - 4.)).object_fit(ObjectFit::Cover)),

@@ -1,4 +1,4 @@
-//! Horizon launcher: installs Horizon builds, prepares them from the player's own Minecraft,
+//! Kitwy Launcher: installs Horizon builds, prepares them from the player's own Minecraft,
 //! and starts the client or a dedicated server.
 
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
@@ -1483,11 +1483,7 @@ impl Launcher {
             let tx = self.tx.clone();
             std::thread::spawn(move || {
                 let progress = |phase| {
-                    let _ = tx.send(Msg::AccountProgress(
-                        account.key(),
-                        generation,
-                        phase,
-                    ));
+                    let _ = tx.send(Msg::AccountProgress(account.key(), generation, phase));
                 };
                 progress(account::session::Phase::Keychain);
                 let store = account::store();
@@ -1694,34 +1690,24 @@ fn version_tag(tag: &str) -> Div {
         )
 }
 
-/// Horizon's mark: two stems, their reflection below, and the horizon across in the accent.
+/// Kitwy's compact Material mark: a clear letterform in a tonal rounded-square container.
 fn mark(size: f32, t: &Theme) -> Div {
-    let u = size / 16.;
-    let stem = |x: f32, y: f32, color: Hsla| {
-        div()
-            .absolute()
-            .left(px(x * u))
-            .top(px(y * u))
-            .w(px(2. * u))
-            .h(px(4. * u))
-            .bg(color)
-    };
     div()
-        .relative()
+        .flex()
         .flex_none()
         .size(px(size))
-        .child(stem(4., 3., t.ink))
-        .child(stem(10., 3., t.ink))
-        .child(stem(4., 8., t.ink.opacity(0.36)))
-        .child(stem(10., 8., t.ink.opacity(0.36)))
+        .items_center()
+        .justify_center()
+        .rounded(px(size * 0.32))
+        .bg(t.accent)
         .child(
             div()
-                .absolute()
-                .left(px(u))
-                .top(px(7. * u))
-                .w(px(14. * u))
-                .h(px(u))
-                .bg(t.accent),
+                .font_family(theme::FONT)
+                .font_weight(FontWeight::BOLD)
+                .text_size(px(size * 0.58))
+                .line_height(px(size * 0.7))
+                .text_color(t.on_accent)
+                .child("K"),
         )
 }
 
@@ -2561,7 +2547,7 @@ impl Launcher {
                 .child(
                     shell::text(theme::night::TITLE, shell::c(n.ink))
                         .font_family(theme::DISPLAY_FONT)
-                        .child("Horizon"),
+                        .child("Kitwy"),
                 )
         });
         shell::sidebar_plate(&t)
@@ -2950,9 +2936,8 @@ impl Launcher {
             }
         }
 
-        // The banner: the hero and the Play row over the sky (`sky.rs`), or over the player's
-        // own picture under a veil of the page colour. It reaches the content's edges and the top
-        // bar.
+        // The hero lives on a quiet tonal surface; an optional player image remains available
+        // behind it, softened by the same page-colour veil.
         let veil = |angle: f32, from: f32, to: f32, at: f32| {
             div()
                 .absolute()
@@ -2984,10 +2969,13 @@ impl Launcher {
             .flex_col()
             .justify_end()
             .min_h(px(340.))
-            .mx(px(-theme::PAGE_GUTTER))
-            .px(px(theme::PAGE_GUTTER))
+            .mx(px(0.))
+            .px(px(28.))
+            .pt(px(28.))
             .pb(px(28.))
             .gap(px(24.))
+            .rounded(px(28.))
+            .bg(t.side)
             .overflow_hidden()
             .children(picture.into_iter().flatten())
             .child(
@@ -4453,7 +4441,7 @@ impl Render for Launcher {
                                                     .min_w_0()
                                                     .px(px(theme::PAGE_GUTTER))
                                                     .pt(px(if self.page == Page::Play {
-                                                        0.
+                                                        20.
                                                     } else {
                                                         28.
                                                     }))
@@ -4494,12 +4482,12 @@ impl Render for Launcher {
             let gone = 1. - ease_out_cubic(reveal / 0.6);
             let word = div()
                 .flex()
-                .font_family(theme::PIXEL)
-                .text_size(px(theme::WORDMARK.px * 0.5))
-                .line_height(px(theme::WORDMARK.px * 0.5))
-                .font_weight(FontWeight::BOLD)
+                .font_family(theme::DISPLAY_FONT)
+                .text_size(px(72.))
+                .line_height(px(80.))
+                .font_weight(FontWeight::SEMIBOLD)
                 .text_color(t.ink)
-                .children("HORIZON".chars().enumerate().map(|(i, c)| {
+                .children("KITWY".chars().enumerate().map(|(i, c)| {
                     let at = held - i as f32 * theme::STAGGER.as_secs_f32() * 1.5;
                     let p = ease_out_cubic(at / theme::ENTER.as_secs_f32());
                     div()
@@ -4642,8 +4630,8 @@ fn key_bindings() -> Vec<KeyBinding> {
 fn menus() -> Vec<Menu> {
     vec![
         Menu {
-            name: "Horizon Launcher".into(),
-            items: vec![MenuItem::action("Quit Horizon Launcher", Quit)],
+            name: "Kitwy Launcher".into(),
+            items: vec![MenuItem::action("Quit Kitwy Launcher", Quit)],
             disabled: false,
         },
         Menu {
@@ -4675,12 +4663,10 @@ fn main() {
         .run(|cx: &mut App| {
             cx.text_system()
                 .add_fonts(vec![
+                    Cow::Borrowed(horizon_theme::fonts::GEIST_REGULAR),
+                    Cow::Borrowed(horizon_theme::fonts::GEIST_MEDIUM),
+                    Cow::Borrowed(horizon_theme::fonts::GEIST_SEMIBOLD),
                     Cow::Borrowed(horizon_theme::fonts::GEIST_MONO),
-                    Cow::Borrowed(horizon_theme::fonts::BRICOLAGE_REGULAR),
-                    Cow::Borrowed(horizon_theme::fonts::BRICOLAGE_MEDIUM),
-                    Cow::Borrowed(horizon_theme::fonts::BRICOLAGE_SEMIBOLD),
-                    Cow::Borrowed(horizon_theme::fonts::BRICOLAGE_BOLD),
-                    Cow::Borrowed(horizon_theme::fonts::BRICOLAGE_DISPLAY_BOLD),
                 ])
                 .expect("bundled fonts");
             cx.bind_keys(key_bindings());
@@ -4703,7 +4689,7 @@ fn main() {
                     titlebar: Some(titlebar::options()),
                     #[cfg(target_os = "linux")]
                     window_decorations: Some(gpui::WindowDecorations::Client),
-                    app_id: Some("horizon-launcher".into()),
+                    app_id: Some("kitwy-launcher".into()),
                     // GPUI draws a window without focus at most every 33 ms to save energy. A
                     // benchmark's window often starts without it (KDE keeps focus from windows
                     // a background process opens), and it measures drawing, not that limit.
@@ -4862,10 +4848,10 @@ mod tests {
     #[test]
     fn the_app_menu_has_quit() {
         let menus = super::menus();
-        assert_eq!(menus[0].name, "Horizon Launcher");
+        assert_eq!(menus[0].name, "Kitwy Launcher");
         assert!(matches!(
             &menus[0].items[0],
-            gpui::MenuItem::Action { name, .. } if name == "Quit Horizon Launcher"
+            gpui::MenuItem::Action { name, .. } if name == "Quit Kitwy Launcher"
         ));
     }
 

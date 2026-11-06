@@ -1,9 +1,14 @@
-# Horizon launcher
+# Kitwy Launcher
 
-A small desktop app that installs Horizon builds, prepares them from your own copy of
-Minecraft, and starts the client or a dedicated server. Built with [GPUI Fast](https://github.com/longbridge/gpui-fast),
-a fork of Zed's UI framework [GPUI](https://www.gpui.rs) that draws unchanged views from the last frame;
-it has its own Cargo workspace and is not part of the game's builds.
+Kitwy is the visual identity of this fork's desktop launcher. It installs Horizon builds, prepares
+them from your own copy of Minecraft, and starts the client or a dedicated server. Built with
+[GPUI Fast](https://github.com/longbridge/gpui-fast), a fork of Zed's UI framework
+[GPUI](https://www.gpui.rs) that draws unchanged views from the last frame; it has its own Cargo
+workspace and is not part of the game's builds.
+
+The redesigned launcher uses a Material You-inspired palette, rounded tonal surfaces, Geist
+typography and a quiet, static background. The Android game screens and Horizon's shared game
+theme remain unchanged.
 
 ![Play](docs/play.png)
 

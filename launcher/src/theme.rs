@@ -1,37 +1,87 @@
-//! The launcher's view of Horizon's design tokens (`crates/horizon-theme`, described in
-//! `docs/design-system.md`): the night look (`horizon_theme::night`, a night sky or a dawn with
-//! Horizon's violet) in Bricolage Grotesque, with Geist Mono for paths and codes (all bundled, SIL
-//! Open Font License). Screens not rebuilt yet draw the Blocks parts in the night's colours.
+//! Kitwy Launcher's local Material You design tokens. This stays local to the launcher so the
+//! Android game and the shared Horizon website retain their existing visual language.
 use gpui::{rgb, Hsla, WindowAppearance};
 use horizon_launcher::backend::Appearance;
 use horizon_launcher::themes::Accent;
 use horizon_theme as tokens;
 use std::time::Duration;
 
-pub use tokens::night::{self, Night};
-pub use tokens::{Step, CAPTION, DISPLAY, HEADING, LABEL, MICRO, TITLE, UI, WORDMARK};
+/// Launcher-specific dimensions and palette built on the shared `Night` data shape.
+pub mod night {
+    pub use horizon_theme::night::over;
+    pub use horizon_theme::night::Night;
+    pub use horizon_theme::night::{CAPTION, DISPLAY, PLAY, TITLE, UI, UNCARDED_STOPS};
+
+    pub const FONT: &str = "Geist";
+    pub const DISPLAY_FONT: &str = "Geist";
+    /// Rounded Material surfaces replace the former stepped pixel corners.
+    pub const PIXEL_CORNER: f32 = 8.;
+    pub const RADIUS_CONTROL: f32 = 16.;
+
+    pub const NIGHT: Night = Night {
+        sky: [0x141218; 6],
+        page: 0x141218,
+        side: 0x1d1b20,
+        card: 0x211f26,
+        card_alpha: 1.,
+        card_hi: 0x302d35,
+        card_hi_alpha: 1.,
+        stroke: 0x938f99,
+        stroke_alpha: 0.22,
+        rule_alpha: 0.16,
+        ink: 0xe6e1e9,
+        ink_soft: 0xcac4d0,
+        muted: 0xb0a9b5,
+        accent: 0xd0bcff,
+        accent_hi: 0xd0bcff,
+        on_accent: 0x381e72,
+        success: 0xa8dab5,
+        warn: 0xf5c174,
+        danger: 0xffb4ab,
+        dark: true,
+    };
+
+    pub const DAWN: Night = Night {
+        sky: [0xf8f6fa; 6],
+        page: 0xf8f6fa,
+        side: 0xf2eff5,
+        card: 0xfffbff,
+        card_alpha: 1.,
+        card_hi: 0xeee8f1,
+        card_hi_alpha: 1.,
+        stroke: 0x79747e,
+        stroke_alpha: 0.22,
+        rule_alpha: 0.14,
+        ink: 0x1d1b20,
+        ink_soft: 0x49454f,
+        muted: 0x625d67,
+        accent: 0x6750a4,
+        accent_hi: 0x6750a4,
+        on_accent: 0xffffff,
+        success: 0x386a20,
+        warn: 0x745b00,
+        danger: 0xb3261e,
+        dark: false,
+    };
+}
+
+pub use tokens::{Step, CAPTION, DISPLAY, HEADING, LABEL, MICRO, TITLE, UI};
 pub const FONT: &str = night::FONT;
 pub const DISPLAY_FONT: &str = night::DISPLAY_FONT;
 pub const MONO: &str = tokens::MONO;
-/// What the Blocks parts set in their pixel face (headings, navigation, buttons) until their
-/// screens are rebuilt: the night's UI family.
+/// Legacy helper name retained while its face now uses Geist rather than a pixel font.
 pub const PIXEL: &str = night::FONT;
 
 pub use tokens::{BLOCK_BEVEL as BEVEL, BLOCK_LIP as LIP};
-/// Shapes and controls, shared with the game's menus and the website.
 pub use tokens::{CONTROL_LARGE, DISABLED, FIELD, PRESSED, RISE, ROW, SEGMENT};
 
-/// Blocks have square corners: these stay for the places that ask for a radius.
-pub const RADIUS: f32 = 0.;
-pub const RADIUS_PLATE: f32 = 0.;
-/// Buttons are a little taller than the quiet look's, for their lip.
-pub const CONTROL: f32 = 34.;
-/// The top bar, and the sidebar of instances and servers.
-pub const TOPBAR: f32 = 56.;
-pub const SIDEBAR: f32 = 248.;
+pub const RADIUS: f32 = 12.;
+pub const RADIUS_PLATE: f32 = 20.;
+pub const CONTROL: f32 = 40.;
+pub const TOPBAR: f32 = 64.;
+pub const SIDEBAR: f32 = 260.;
 pub const PAGE_GUTTER: f32 = 32.;
 
-/// Motion: short and eased out, never bouncy.
 pub const QUICK: Duration = tokens::QUICK.duration();
 pub const MOVE: Duration = tokens::MOVE.duration();
 pub const ENTER: Duration = tokens::ENTER.duration();
@@ -39,13 +89,9 @@ pub const STAGGER: Duration = tokens::STAGGER;
 
 #[derive(Clone, Copy)]
 pub struct Theme {
-    /// The page behind everything the sky doesn't cover.
     pub page: Hsla,
-    /// Hover plates, fields and the console: the raised panel colour.
     pub plate_soft: Hsla,
-    /// Pressed plates, a switch that is off: the button colour.
     pub plate: Hsla,
-    /// Dialogs and menus above the page: the panel colour.
     pub surface: Hsla,
     pub rule: Hsla,
     pub ink: Hsla,
@@ -56,7 +102,6 @@ pub struct Theme {
     pub danger: Hsla,
     pub success: Hsla,
     pub warn: Hsla,
-    /// The blocky parts (`horizon_theme::Blocks`).
     pub side: Hsla,
     pub panel: Hsla,
     pub raised: Hsla,
@@ -70,8 +115,7 @@ pub struct Theme {
     pub face_bevel: Hsla,
     pub face_lip: Hsla,
     pub on_face: Hsla,
-    /// The night look's own tokens (the sky, plates with their opacity), for rebuilt screens.
-    pub night: Night,
+    pub night: night::Night,
     pub dark: bool,
 }
 
@@ -79,9 +123,7 @@ fn c(hex: u32) -> Hsla {
     rgb(hex).into()
 }
 
-/// Whether the launcher is pinned dark (`Some(true)`) or light, or follows the system (`None`):
-/// `HORIZON_LAUNCHER_APPEARANCE=light` or `dark` (for screenshots and tests), else the player's
-/// choice in Settings.
+/// Whether the launcher is pinned dark (`Some(true)`) or light, or follows the system (`None`).
 pub fn pinned_dark(choice: Appearance) -> Option<bool> {
     match std::env::var("HORIZON_LAUNCHER_APPEARANCE").as_deref() {
         Ok("light") => Some(false),
@@ -95,19 +137,22 @@ pub fn pinned_dark(choice: Appearance) -> Option<bool> {
 }
 
 impl Theme {
-    /// The pinned look (`pinned_dark`: dark unless the player picked another), the system's when
-    /// they asked to follow it, in the player's accent.
+    /// Kitwy's dynamic-colour-inspired Material palette follows the player's appearance and accent.
     pub fn for_appearance(choice: Appearance, accent: Accent, system: WindowAppearance) -> Self {
         let system_dark = !matches!(
             system,
             WindowAppearance::Light | WindowAppearance::VibrantLight
         );
         let dark = pinned_dark(choice).unwrap_or(system_dark);
-        let night = if dark { night::NIGHT } else { night::DAWN };
-        Self::from(accent.apply(night.blocks()), night)
+        let mut night = if dark { night::NIGHT } else { night::DAWN };
+        let blocks = accent.apply(night.blocks());
+        night.accent = blocks.face;
+        night.accent_hi = blocks.accent;
+        night.on_accent = blocks.on_face;
+        Self::from(blocks, night)
     }
 
-    fn from(p: tokens::Blocks, night: Night) -> Self {
+    fn from(p: tokens::Blocks, night: night::Night) -> Self {
         Self {
             page: c(p.page),
             plate_soft: c(p.raised),
@@ -141,14 +186,12 @@ impl Theme {
     }
 }
 
-/// How strongly a selected suggestion in a text field is tinted with the accent.
 pub const SELECTION: f32 = 0.22;
 
 #[cfg(test)]
 mod tests {
-    use super::{tokens, SELECTION};
+    use super::{night, tokens, SELECTION};
 
-    /// `top` at `alpha` over `under`, as the GPU blends them.
     fn blend(top: u32, under: u32, alpha: f32) -> u32 {
         let channel = |shift: u32| {
             let (a, b) = ((top >> shift & 0xff) as f32, (under >> shift & 0xff) as f32);
@@ -157,31 +200,34 @@ mod tests {
         channel(16) | channel(8) | channel(0)
     }
 
-    /// What the Servers page draws besides text (whose colours horizon-theme's own test holds to
-    /// WCAG AA on every background): the keyboard focus ring, the borders of a focused or refused
-    /// field (WCAG 1.4.11 asks 3:1 for those), and text over a selected suggestion.
     #[test]
-    fn marks_and_selections_read_clearly() {
-        for p in [tokens::night::DAWN.blocks(), tokens::night::NIGHT.blocks()] {
-            let theme = if p.dark { "dark" } else { "light" };
+    fn material_palette_keeps_text_focus_and_selection_readable() {
+        for palette in [night::DAWN, night::NIGHT] {
+            let look = if palette.dark { "dark" } else { "light" };
+            let blocks = palette.blocks();
             for (name, bg) in [
-                ("page", p.page),
-                ("raised", p.raised),
-                ("button", p.button),
-                ("panel", p.panel),
-                ("well", p.well),
+                ("page", blocks.page),
+                ("raised", blocks.raised),
+                ("button", blocks.button),
+                ("panel", blocks.panel),
+                ("well", blocks.well),
             ] {
-                let ring = tokens::contrast(p.accent, bg);
-                assert!(ring >= 3.0, "{theme} focus ring on {name}: {ring:.2}");
-                let refused = tokens::contrast(p.danger, bg);
-                assert!(
-                    refused >= 3.0,
-                    "{theme} refused field on {name}: {refused:.2}"
-                );
+                let ring = tokens::contrast(blocks.accent, bg);
+                assert!(ring >= 3.0, "{look} focus ring on {name}: {ring:.2}");
+                let refused = tokens::contrast(blocks.danger, bg);
+                assert!(refused >= 3.0, "{look} error mark on {name}: {refused:.2}");
             }
-            let selection = blend(p.accent, p.panel, SELECTION);
-            let ratio = tokens::contrast(p.ink, selection);
-            assert!(ratio >= 4.5, "{theme} text on a selection: {ratio:.2}");
+            let selection = blend(blocks.accent, blocks.panel, SELECTION);
+            let selected_text = tokens::contrast(blocks.ink, selection);
+            assert!(
+                selected_text >= 4.5,
+                "{look} selected text contrast: {selected_text:.2}"
+            );
+            let primary = tokens::contrast(blocks.on_face, blocks.face);
+            assert!(
+                primary >= 4.5,
+                "{look} primary button contrast: {primary:.2}"
+            );
         }
     }
 }
