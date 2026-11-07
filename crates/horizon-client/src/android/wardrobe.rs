@@ -5,6 +5,7 @@ use super::{
 };
 use crate::{
     account::{Accounts, Provider},
+    launcher_theme::color,
     skins::{
         self, Model, cloud,
         library::{Kind, Library},
@@ -13,7 +14,7 @@ use crate::{
 };
 use horizon_client::{
     hud::rgba,
-    ui_theme::{Face, Ui, color},
+    ui_theme::{Face, Ui},
 };
 use std::{
     path::{Path, PathBuf},

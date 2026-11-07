@@ -1,5 +1,6 @@
 use super::*;
-use horizon_client::{osk::Output, ui_theme::color};
+use crate::launcher_theme::color;
+use horizon_client::osk::Output;
 use winit::{
     event::{KeyEvent, Touch},
     keyboard::{KeyCode, PhysicalKey},
@@ -94,14 +95,18 @@ pub(super) fn button(
     accent: bool,
 ) {
     let [x, y, w, h] = rect;
+    let radius = (h * 0.5).min(color::PILL_RADIUS);
     ui.rounded(
         x,
         y,
         w,
         h,
-        2.0,
+        radius,
         if accent { color::ACCENT } else { color::RAISED },
     );
+    if !accent {
+        ui.border(x, y, w, h, radius, color::BORDER);
+    }
     let padding = (w * 0.12).clamp(4.0, 12.0);
     let base = if w < 80.0 { 13.0 } else { 16.0 };
     let font = if matches!(action, Action::Page(_)) {
@@ -111,15 +116,46 @@ pub(super) fn button(
         base
     };
     let label = ui.fit_text(Face::Medium, font, label, w - 2.0 * padding);
+    let line = (font * 1.45).round();
     ui.text(
         Face::Medium,
         font,
         x + padding,
-        y + 11.0,
+        y + (h - line) * 0.5,
         if accent {
             color::ON_ACCENT
         } else {
             color::TEXT
+        },
+        &label,
+    );
+    targets.push((rect, action));
+}
+fn nav_button(
+    ui: &mut Ui,
+    targets: &mut Vec<([f32; 4], Action)>,
+    rect: [f32; 4],
+    label: &str,
+    action: Action,
+    selected: bool,
+) {
+    let [x, y, w, h] = rect;
+    if selected {
+        ui.rounded(x, y, w, h, h * 0.5, color::PRIMARY_CONTAINER);
+    }
+    let size = if w < 74.0 { 12.0 } else { 14.0 };
+    let label = ui.fit_text(Face::Medium, size, label, w - 8.0);
+    let line = (size * 1.45).round();
+    let text_width = ui.measure(Face::Medium, size, &label);
+    ui.text(
+        Face::Medium,
+        size,
+        x + (w - text_width) * 0.5,
+        y + (h - line) * 0.5,
+        if selected {
+            color::ON_PRIMARY_CONTAINER
+        } else {
+            color::MUTED
         },
         &label,
     );
@@ -147,7 +183,11 @@ fn toggle(
         48.0,
         24.0,
         12.0,
-        if on { color::TEXT } else { color::HOVER },
+        if on {
+            color::PRIMARY_CONTAINER
+        } else {
+            color::HOVER
+        },
     );
     ui.rounded(
         x + w - if on { 26.0 } else { 50.0 },
@@ -155,7 +195,7 @@ fn toggle(
         20.0,
         20.0,
         10.0,
-        if on { color::BG } else { color::TEXT },
+        if on { color::PRIMARY } else { color::MUTED },
     );
     targets.push(([x, y, w, h], action));
 }
@@ -248,45 +288,68 @@ impl Launcher {
         }
         let (w, h) = (ui.w, ui.h);
         let scale = ui.density / ui.batch.scale;
+        let compact = w < 700.0;
+        let short = h < 520.0;
         ui.batch
             .fill(&gui.atlas, 0.0, 0.0, w * scale, h * scale, color::BG);
+        ui.rounded(24.0, 12.0, 38.0, 38.0, 14.0, color::ACCENT);
+        let mark_width = ui.measure(Face::SemiBold, 21.0, "K");
         ui.text(
-            Face::Medium,
-            if w < 400.0 {
-                20.0
-            } else if w < 700.0 {
-                24.0
-            } else {
-                32.0
-            },
-            32.0,
-            if w < 700.0 { 12.0 } else { 28.0 },
+            Face::SemiBold,
+            21.0,
+            43.0 - mark_width * 0.5,
+            16.0,
+            color::ON_ACCENT,
+            "K",
+        );
+        ui.text(
+            Face::SemiBold,
+            if compact { 21.0 } else { 24.0 },
+            74.0,
+            11.0,
             color::TEXT,
-            &format!("Horizon Android {}", crate::backend::VERSION),
+            "Kitwy",
+        );
+        ui.text(
+            Face::Regular,
+            11.0,
+            75.0,
+            38.0,
+            color::SUBTLE,
+            &format!("HORIZON ANDROID  ·  {}", crate::backend::VERSION),
         );
         button(
             &mut ui,
             &mut self.targets,
             [
-                if w < 700.0 { 32.0 } else { w - 320.0 },
-                if w < 700.0 { 47.0 } else { 24.0 },
-                if w < 700.0 { w - 64.0 } else { 288.0 },
-                if w < 700.0 { 34.0 } else { 46.0 },
+                if compact { 24.0 } else { w - 320.0 },
+                if compact { 54.0 } else { 18.0 },
+                if compact { w - 48.0 } else { 288.0 },
+                if compact { 36.0 } else { 44.0 },
             ],
             &self.login.status(&self.catalog.config.name),
             Action::Account,
             self.login.signed_in,
         );
         let tabs = Page::ALL.len() as f32;
-        let tab_margin = if w < 700.0 { 16.0 } else { 32.0 };
+        let tab_margin = if compact { 16.0 } else { 32.0 };
         let tab_width = (w - 2.0 * tab_margin) / tabs;
+        let nav_top = if compact { 99.0 } else { 88.0 };
+        ui.rounded(
+            tab_margin,
+            nav_top,
+            w - 2.0 * tab_margin,
+            46.0,
+            23.0,
+            color::SURFACE_CONTAINER,
+        );
         for (i, page) in Page::ALL.iter().enumerate() {
             let x = tab_margin + i as f32 * tab_width;
-            button(
+            nav_button(
                 &mut ui,
                 &mut self.targets,
-                [x, 88.0, tab_width - 4.0, 42.0],
-                if w < 700.0 {
+                [x + 3.0, nav_top + 3.0, tab_width - 6.0, 40.0],
+                if compact {
                     match page {
                         Page::Installed => "Files",
                         Page::Settings => "Setup",
@@ -299,17 +362,49 @@ impl Launcher {
                 *page == self.catalog.page,
             );
         }
-        let compact = w < 700.0;
         let page = self.catalog.page;
         if page == Page::Play {
             use horizon_client::official_install::InstallStage;
             let installed = horizon_client::official_install::ready(&self.home);
             let installing = self.worker.is_some();
             let progress = *self.install.lock().unwrap();
-            let top = 160.0;
+            let top = if short { 148.0 } else { 166.0 };
+            if !short {
+                let card_x = if compact { 20.0 } else { 32.0 };
+                let card_width = (w - 2.0 * card_x).min(760.0);
+                let card = [card_x, 150.0, card_width, (h - 340.0).clamp(220.0, 340.0)];
+                ui.rounded(
+                    card[0],
+                    card[1],
+                    card[2],
+                    card[3],
+                    color::CARD_RADIUS,
+                    color::SURFACE_CONTAINER,
+                );
+                ui.border(
+                    card[0],
+                    card[1],
+                    card[2],
+                    card[3],
+                    color::CARD_RADIUS,
+                    color::BORDER,
+                );
+                if card_width >= 440.0 {
+                    let badge_x = card_x + card_width - 96.0;
+                    ui.rounded(badge_x, 172.0, 72.0, 72.0, 24.0, color::SURFACE_HIGH);
+                    ui.text(
+                        Face::SemiBold,
+                        24.0,
+                        badge_x + 13.0,
+                        190.0,
+                        color::PRIMARY,
+                        "26",
+                    );
+                }
+            }
             ui.text(
                 Face::Medium,
-                32.0,
+                if short || compact { 30.0 } else { 32.0 },
                 32.0,
                 top,
                 color::TEXT,
@@ -327,11 +422,11 @@ impl Launcher {
             );
             ui.text(
                 Face::Regular,
-                17.0,
+                15.0,
                 32.0,
                 top + 47.0,
                 color::MUTED,
-                &format!("Minecraft 26.3  /  Profile {}", self.catalog.config.profile),
+                &format!("Minecraft 26.3  ·  Profile {}", self.catalog.config.profile),
             );
             if installing {
                 let current = InstallStage::ALL
@@ -365,18 +460,20 @@ impl Launcher {
                         Face::Regular,
                         18.0,
                         32.0,
-                        top + 100.0,
+                        top + if short { 68.0 } else { 100.0 },
                         color::TEXT,
                         progress.stage.label(),
                     );
-                    ui.text(
-                        Face::Regular,
-                        15.0,
-                        32.0,
-                        top + 138.0,
-                        color::MUTED,
-                        &format!("Step {} of 6", current + 1),
-                    );
+                    if !short {
+                        ui.text(
+                            Face::Regular,
+                            15.0,
+                            32.0,
+                            top + 138.0,
+                            color::MUTED,
+                            &format!("Step {} of 6", current + 1),
+                        );
+                    }
                 }
                 let fraction = if progress.total > 0 {
                     progress.done as f32 / progress.total as f32
@@ -384,7 +481,7 @@ impl Launcher {
                     0.0
                 };
                 let overall = (current as f32 + fraction.clamp(0.0, 1.0)) / 6.0;
-                let bar_y = h - 152.0;
+                let bar_y = h - if short { 128.0 } else { 152.0 };
                 ui.rounded(32.0, bar_y, w - 64.0, 4.0, 2.0, color::RAISED);
                 if overall > 0.0 {
                     ui.rounded(32.0, bar_y, (w - 64.0) * overall, 4.0, 2.0, color::ACCENT);
@@ -412,42 +509,58 @@ impl Launcher {
             } else {
                 let rows = if installed {
                     [
-                        "01  Open a world or join a Java server",
-                        "02  Touch setup: Options > Controls",
-                        "03  Find packs and .hmod in the tabs",
+                        "Open a world or join a Java server",
+                        "Set up touch in Options > Controls",
+                        "Find packs and .hmod in the tabs",
                     ]
                 } else {
                     [
-                        "01  Download resources from Mojang",
-                        "02  Install and verify on this phone",
-                        "03  Play offline or sign in for servers",
+                        "Download resources from Mojang",
+                        "Install and verify on this phone",
+                        "Play offline or sign in for servers",
                     ]
                 };
                 for (index, line) in rows.iter().enumerate() {
-                    ui.text(
-                        Face::Regular,
-                        17.0,
-                        32.0,
-                        top + 100.0 + index as f32 * 42.0,
-                        color::MUTED,
-                        line,
-                    );
+                    let y = top
+                        + if short { 72.0 } else { 100.0 }
+                        + index as f32 * if short { 28.0 } else { 42.0 };
+                    if !short {
+                        ui.rounded(32.0, y + 1.0, 24.0, 24.0, 12.0, color::SURFACE_HIGH);
+                        ui.text(
+                            Face::Medium,
+                            11.0,
+                            40.0,
+                            y + 5.0,
+                            color::PRIMARY,
+                            &format!("{}", index + 1),
+                        );
+                    }
+                    let x = if short { 32.0 } else { 68.0 };
+                    let size = if short { 14.0 } else { 16.0 };
+                    let line = ui.fit_text(Face::Regular, size, line, w - x - 32.0);
+                    ui.text(Face::Regular, size, x, y, color::MUTED, &line);
                 }
             }
             if installing {
-                ui.text(
-                    Face::Medium,
-                    19.0,
-                    32.0,
-                    h - 90.0,
-                    color::TEXT,
-                    progress.stage.label(),
-                );
+                if !short {
+                    ui.text(
+                        Face::Medium,
+                        19.0,
+                        32.0,
+                        h - 90.0,
+                        color::TEXT,
+                        progress.stage.label(),
+                    );
+                }
             } else {
                 button(
                     &mut ui,
                     &mut self.targets,
-                    [32.0, h - 100.0, 320.0, 60.0],
+                    if compact {
+                        [24.0, h - if short { 66.0 } else { 100.0 }, w - 48.0, 56.0]
+                    } else {
+                        [32.0, h - if short { 66.0 } else { 100.0 }, 320.0, 56.0]
+                    },
                     if installed {
                         "Play"
                     } else if self.error.is_some() {
@@ -1091,12 +1204,19 @@ impl Launcher {
             .take(2)
             .enumerate()
         {
+            if short && page == Page::Play {
+                continue;
+            }
             ui.text(
                 Face::Regular,
                 14.0,
                 32.0,
                 h - 47.0 + i as f32 * 18.0,
-                color::MUTED,
+                if self.error.is_some() {
+                    color::ERROR
+                } else {
+                    color::SUBTLE
+                },
                 &ui.fit_text(
                     Face::Regular,
                     14.0,
@@ -1177,7 +1297,15 @@ impl Launcher {
             let width = (w - 32.0).min(360.0);
             let x = (w - width) * 0.5;
             let y = (h - 160.0) * 0.5;
-            ui.rounded(x, y, width, 160.0, 8.0, color::RAISED);
+            ui.rounded(
+                x,
+                y,
+                width,
+                160.0,
+                color::CARD_RADIUS,
+                color::SURFACE_CONTAINER,
+            );
+            ui.border(x, y, width, 160.0, color::CARD_RADIUS, color::BORDER);
             ui.text(
                 Face::Medium,
                 22.0,
@@ -1210,7 +1338,7 @@ impl Launcher {
         if let Some(index) = self.focus
             && let Some(([x, y, w, h], _)) = self.targets.get(index)
         {
-            ui.border(*x - 2.0, *y - 2.0, *w + 4.0, *h + 4.0, 2.0, color::TEXT);
+            ui.border(*x - 3.0, *y - 3.0, *w + 6.0, *h + 6.0, 10.0, color::PRIMARY);
             self.cursor = (
                 f64::from((x + w / 2.0) * ui.density),
                 f64::from((y + h / 2.0) * ui.density),
